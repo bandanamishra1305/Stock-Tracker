@@ -1,0 +1,46 @@
+services:
+  # 1. Managed PostgreSQL Database
+  - type: db
+    name: stocktrack-db
+    databaseName: stocktrack
+    user: postgres
+    plan: free
+
+  # 2. Python FastAPI Backend Service
+  - type: web
+    name: stocktrack-backend
+    env: docker
+    dockercontext: ./backend
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: stocktrack-db
+          property: connectionString
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: TOTP_SECRET
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+
+  # 3. Next.js Frontend Service
+  - type: web
+    name: stocktrack-frontend
+    env: docker
+    dockercontext: ./frontend
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: stocktrack-backend
+          type: web
+          property: host
